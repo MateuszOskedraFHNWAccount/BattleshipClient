@@ -1,7 +1,7 @@
 java -jar target/battleship-server-1.0-SNAPSHOT.jar
 
 
-Check network connectivity GET /ping expect {"ping": true}
+OK Check network connectivity GET /ping expect {"ping": true}
 
 define game key
 define initial ship positions
