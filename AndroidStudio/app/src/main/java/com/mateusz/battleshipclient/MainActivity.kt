@@ -8,6 +8,9 @@ import android.widget.EditText
 import android.widget.TextView
 
 import com.mateusz.battleshipclient.network.ApiClient
+import com.mateusz.battleshipclient.model.JoinGameRequest
+import com.mateusz.battleshipclient.model.ShipPosition
+
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 /*
@@ -25,12 +28,10 @@ import java.io.IOException
 class MainActivity : AppCompatActivity() , View.OnClickListener {
 
     lateinit var btnAdd : Button
-    lateinit var btnSub : Button
-    lateinit var btnMultiply : Button
-    lateinit var btnDivision : Button
     lateinit var etA : EditText
     lateinit var etB : EditText
     lateinit var resultTv : TextView
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,28 +42,43 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         resultTv = findViewById(R.id.result_tv)
 
         btnAdd.setOnClickListener(this)
-        btnSub.setOnClickListener(this)
-        btnMultiply.setOnClickListener(this)
-        btnDivision.setOnClickListener(this)
 
 
 
     }
 
     override fun onClick(v: View?) {
-        // Check Server connection
         lifecycleScope.launch {
             val connected = checkServerConnection()
-            if (connected) {
-                resultTv.text = "Server OK"
-            } else {
+            if (!connected) {
                 resultTv.text = "Server failed"
                 showServerDialog("Connection Error")
+                return@launch
+            } else {
+                resultTv.text = "Server OK"
+            }
+
+            val userValues = getUserValues()
+            if (userValues == null) return@launch
+            val (gameKey, playerName) = userValues
+            resultTv.text = "GameKey: $gameKey\nPlayer: $playerName"
+
+            // Create JoinGameRequest and send
+            val joinReq = JoinGameRequest(
+                player = playerName,
+                gamekey = gameKey,
+                ships = getDefaultShips()
+            )
+
+            try {
+                val response = ApiClient.api.joinGame(joinReq)
+                resultTv.text = "Joined game!\nResponse: $response"
+            } catch (e: Exception) {
+                resultTv.text = "Join failed: ${e.message}"
             }
         }
-
-        
     }
+
 
     suspend fun checkServerConnection(): Boolean {
         return try {
@@ -73,6 +89,17 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
         }
     }
 
+    fun getUserValues(): Pair<String, String>? {
+        val gameKey = etA.text.toString()
+        val playerName = etB.text.toString()
+        if (gameKey.length < 3 || playerName.length < 3) {
+            showServerDialog("Both Game Key and Player Name must be at least 3 characters long")
+            return null
+        }
+        return Pair(gameKey, playerName)
+    }
+
+
     private fun showServerDialog(title: String) {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(title)
@@ -81,6 +108,13 @@ class MainActivity : AppCompatActivity() , View.OnClickListener {
             .show()
     }
 
+    fun getDefaultShips(): List<ShipPosition> = listOf(
+        ShipPosition("Carrier",    0, 3, "horizontal"),
+        ShipPosition("Battleship", 1, 1, "vertical"),
+        ShipPosition("Destroyer",  2, 4, "horizontal"),
+        ShipPosition("Submarine",  3, 3, "vertical"),
+        ShipPosition("PatrolBoat", 5, 5, "horizontal")
+    )
 
 
 

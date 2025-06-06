@@ -1,4 +1,4 @@
-package com.example.battleships_mateusz_sander.model
+package com.mateusz.battleshipclient.model
 
 data class Ship(
     val ship: String,

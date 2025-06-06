@@ -1,6 +1,6 @@
 package com.mateusz.battleshipclient.network
 
-import com.example.battleships_mateusz_sander.model.*
+import com.mateusz.battleshipclient.model.*
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
