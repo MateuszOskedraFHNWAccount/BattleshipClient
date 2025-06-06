@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     /* ---------- build a 10×10 grid ---------- */
     private fun fillGrid(grid: GridLayout, prefix: String) {
         grid.removeAllViews()
-        val cell = resources.displayMetrics.widthPixels / 10
+        val cell = (resources.displayMetrics.widthPixels / 10f / 1.5f).toInt()
         repeat(100) { idx ->
             val row = idx / 10
             val col = idx % 10
