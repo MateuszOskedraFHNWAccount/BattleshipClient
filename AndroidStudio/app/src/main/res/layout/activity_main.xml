@@ -28,10 +28,11 @@
 
         <Button
             android:id="@+id/btn_randomize"
+            style="@style/Widget.AppCompat.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Randomize Ships"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="8dp"
+            android:text="Randomize Ships" />
 
         <TextView
             android:layout_width="match_parent"
@@ -71,20 +72,22 @@
             android:useDefaultMargins="true"
             android:background="#cccccc" />
 
-        <Button
-            android:id="@+id/btn_add"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Start Game"
-            android:layout_marginTop="16dp"/>
-
         <TextView
             android:id="@+id/result_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="DebugText"
+            android:text=" "
             android:textSize="16sp"
             android:gravity="center"
             android:layout_marginTop="8dp"/>
+
+        <Button
+            android:id="@+id/btn_add"
+            style="@style/Widget.AppCompat.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="#3F51B5"
+            android:text="Start Game" />
     </LinearLayout>
 </ScrollView>
