@@ -17,6 +17,10 @@ import com.mateusz.battleshipclient.network.ApiClient
 import kotlinx.coroutines.launch
 import kotlin.random.Random
 import androidx.core.view.children
+import android.widget.Toast      // add
+import android.widget.Spinner    // add
+import android.widget.ToggleButton
+import android.widget.ArrayAdapter
 
 class MainActivity : AppCompatActivity(), View.OnClickListener {
 
@@ -27,6 +31,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private lateinit var resultTv: TextView
     private lateinit var ownGrid: GridLayout
     private lateinit var enemyGrid: GridLayout
+    private lateinit var spShip: Spinner          // NEW
+    private lateinit var tbOrient: ToggleButton   // NEW
 
     /* ---- game state ---- */
     private var gameKey = ""
@@ -39,7 +45,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         "Carrier" to 5, "Battleship" to 4, "Destroyer" to 3,
         "Submarine" to 3, "PatrolBoat" to 2
     )
-    private var currentShips: List<ShipPosition> = emptyList()
+    private val placed = BooleanArray(shipDefs.size)         // after shipDefs
+    private val occ = Array(10) { BooleanArray(10) }         // board occupation map
+    private var currentShips = emptyList<ShipPosition>()
 
     /* ---------- lifecycle ---------- */
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,12 +68,27 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         prepareBoard(ownGrid,   "O")
         prepareBoard(enemyGrid, "E")
 
+        spShip   = findViewById(R.id.sp_ship)
+        tbOrient = findViewById(R.id.tb_orientation)
+        val btnClear = findViewById<Button>(R.id.btn_clear)
+
+        spShip.adapter = ArrayAdapter(
+            this, android.R.layout.simple_spinner_item, shipDefs.map { it.first }
+        )
+
+        btnClear.setOnClickListener {
+            ownGrid.children.forEach { (it as Button).apply { text=""; setBackgroundColor(Color.WHITE) } }
+            occ.forEach { it.fill(false) }
+            placed.fill(false)
+            currentShips = emptyList()
+        }
+
     }
 
     /* ---------- build a 10×10 grid ---------- */
     private fun fillGrid(grid: GridLayout, prefix: String, cellPx: Float) {
         grid.removeAllViews()
-        val cell = (cellPx).toInt()
+        val cell = cellPx.toInt()
 
         repeat(100) { idx ->
             val row = idx / 10
@@ -81,17 +104,29 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     columnSpec = GridLayout.spec(col)
                     setMargins(1,1,1,1)
                 }
-                if (prefix == "E") {            // enemy board → fire
+                if (prefix == "E") {               // fire on enemy
                     setOnClickListener {
                         if (!myTurn || gameOver) return@setOnClickListener
-                        fireAt(col, row, this)
+                        fireAt(col,row,this)
                     }
-                } else {                        // own board → toggle for test
+                } else {                           // place ships on own board
                     setOnClickListener {
-                        text = when (text) {
-                            "" -> "S"; "S" -> "X"; else -> ""
-                        }
-                        setBackgroundColor(if (text == "") Color.WHITE else Color.LTGRAY)
+                        if (placed.all { it }) { showToast("All ships placed"); return@setOnClickListener }
+
+                        val shipIdx = spShip.selectedItemPosition
+                        if (placed[shipIdx]) { showToast("Ship already placed"); return@setOnClickListener }
+
+                        val len = shipDefs[shipIdx].second
+                        val horiz = tbOrient.isChecked
+                        if (!fits(len,col,row,horiz)) { showToast("Invalid position"); return@setOnClickListener }
+
+                        mark(len,col,row,horiz)
+                        currentShips += ShipPosition(
+                            shipDefs[shipIdx].first, col, row,
+                            if (horiz) "horizontal" else "vertical"
+                        )
+                        placed[shipIdx] = true
+                        if (placed.all { it }) showToast("All ships placed – you can start!")
                     }
                 }
             }
@@ -106,26 +141,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         val occ = Array(10) { BooleanArray(10) }
         val placed = mutableListOf<ShipPosition>()
 
-        fun fits(len: Int, x: Int, y: Int, h: Boolean): Boolean {
-            if (h && x + len > 10) return false
-            if (!h && y + len > 10) return false
-            repeat(len) {
-                val cx = if (h) x + it else x
-                val cy = if (h) y     else y + it
-                if (occ[cx][cy]) return false
-            }
-            return true
-        }
-        fun mark(len: Int, x: Int, y: Int, h: Boolean) {
-            repeat(len) {
-                val cx = if (h) x + it else x
-                val cy = if (h) y     else y + it
-                occ[cx][cy] = true
-                (ownGrid.getChildAt(cy * 10 + cx) as Button).apply {
-                    text = "S"; setBackgroundColor(Color.LTGRAY)
-                }
-            }
-        }
+
 
         for ((name,len) in shipDefs) {
             while (true) {
@@ -165,6 +181,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
     }
+
 
     /* ---------- fire / poll ---------- */
     private fun fireAt(x:Int,y:Int,btn:Button)=lifecycleScope.launch{
@@ -234,4 +251,29 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         ShipPosition("Submarine",3,3,"vertical"),
         ShipPosition("PatrolBoat",5,5,"horizontal")
     )
+
+    private fun fits(len:Int,x:Int,y:Int,h:Boolean):Boolean {
+        if (h && x+len>10) return false
+        if (!h && y+len>10) return false
+        repeat(len) {
+            val cx = if (h) x+it else x
+            val cy = if (h) y else y+it
+            if (occ[cx][cy]) return false
+        }
+        return true
+    }
+
+    private fun mark(len:Int,x:Int,y:Int,h:Boolean){
+        repeat(len){
+            val cx = if (h) x+it else x
+            val cy = if (h) y else y+it
+            occ[cx][cy]=true
+            (ownGrid.getChildAt(cy*10+cx) as Button).apply{
+                text="S"; setBackgroundColor(Color.LTGRAY)
+            }
+        }
+    }
+
+    private fun showToast(msg:String)=Toast.makeText(this,msg,Toast.LENGTH_SHORT).show()
+
 }

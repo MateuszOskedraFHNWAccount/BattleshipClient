@@ -33,6 +33,36 @@
             android:text="Randomize Ships"
             android:layout_marginBottom="8dp"/>
 
+        <!-- put this right above Your field -->
+        <LinearLayout
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <Spinner
+                android:id="@+id/sp_ship"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"/>
+
+            <ToggleButton
+                android:id="@+id/tb_orientation"
+                android:textOn="↔"
+                android:textOff="↕"
+                android:checked="true"
+                android:layout_width="48dp"
+                android:layout_height="wrap_content"/>
+
+            <Button
+                android:id="@+id/btn_clear"
+                android:text="Clear"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
