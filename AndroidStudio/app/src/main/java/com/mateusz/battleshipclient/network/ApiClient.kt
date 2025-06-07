@@ -13,7 +13,7 @@ object ApiClient {
         .build()
 
     val api: BattleshipApi = Retrofit.Builder()
-        .baseUrl("http://brad-home.ch:50003")
+        .baseUrl("http://10.0.2.2:50003")
         .addConverterFactory(GsonConverterFactory.create())
         .client(client)
         .build()
