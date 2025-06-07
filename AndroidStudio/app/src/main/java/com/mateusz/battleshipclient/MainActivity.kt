@@ -48,11 +48,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private val placed = BooleanArray(shipDefs.size)         // after shipDefs
     private val occ = Array(10) { BooleanArray(10) }         // board occupation map
     private var currentShips = emptyList<ShipPosition>()
+    private val fired  = HashSet<Pair<Int,Int>>()   // cells we already shot at
+    private var boardLocked = false
+    private lateinit var toolbar: View
 
     /* ---------- lifecycle ---------- */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        toolbar = findViewById(R.id.toolbar)
 
         btnStart     = findViewById(R.id.btn_add)
         btnRandomize = findViewById(R.id.btn_randomize)
@@ -107,8 +111,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 if (prefix == "E") {               // fire on enemy
                     setOnClickListener {
                         if (!myTurn || gameOver) return@setOnClickListener
-                        fireAt(col,row,this)
+
+                        val pos = col to row
+                        if (fired.contains(pos)) { showToast("Already fired here"); return@setOnClickListener }
+                        fired += pos                                  // remember the shot
+                        fireAt(col, row, this)                        // existing call
+
                     }
+
                 } else {                           // place ships on own board
                     setOnClickListener {
                         if (placed.all { it }) { showToast("All ships placed"); return@setOnClickListener }
@@ -173,6 +183,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 val resp = ApiClient.api.joinGame(join)
                 if (resp.x != null && resp.y != null) markEnemyShot(resp.x!!, resp.y!!)
                 myTurn   = resp.x == null
+                toolbar.visibility = View.GONE          // hides the whole bar
+                btnRandomize.visibility = View.GONE     // in case it sits elsewhere
+                btnRandomize.isEnabled = false
+                spShip.isEnabled      = false
+                tbOrient.isEnabled    = false
+                boardLocked = true
+                ownGrid.children.forEach { it.isEnabled = false }   // greys out “Your field”
+
                 gameOver = resp.gameover
                 resultTv.text = if (myTurn) "We start – shoot!" else "Waiting for enemy…"
                 if (!myTurn) waitEnemyFire()
