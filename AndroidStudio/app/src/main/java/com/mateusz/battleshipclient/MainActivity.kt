@@ -57,14 +57,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         btnStart.setOnClickListener(this)
         btnRandomize.setOnClickListener { randomizeShips() }
 
-        fillGrid(ownGrid,   "O")
-        fillGrid(enemyGrid, "E")
+        prepareBoard(ownGrid,   "O")
+        prepareBoard(enemyGrid, "E")
+
     }
 
     /* ---------- build a 10×10 grid ---------- */
-    private fun fillGrid(grid: GridLayout, prefix: String) {
+    private fun fillGrid(grid: GridLayout, prefix: String, cellPx: Float) {
         grid.removeAllViews()
-        val cell = (resources.displayMetrics.widthPixels / 10f / 1.5f).toInt()
+        val cell = (cellPx).toInt()
+
         repeat(100) { idx ->
             val row = idx / 10
             val col = idx % 10
@@ -74,12 +76,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 typeface = Typeface.DEFAULT_BOLD
                 setBackgroundColor(Color.WHITE)
                 layoutParams = GridLayout.LayoutParams().apply {
-                    width = cell; height = cell
+                    width = cell;  height = cell
                     rowSpec = GridLayout.spec(row)
                     columnSpec = GridLayout.spec(col)
-                    setMargins(1, 1, 1, 1)
+                    setMargins(1,1,1,1)
                 }
-
                 if (prefix == "E") {            // enemy board → fire
                     setOnClickListener {
                         if (!myTurn || gameOver) return@setOnClickListener
@@ -87,7 +88,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                     }
                 } else {                        // own board → toggle for test
                     setOnClickListener {
-                        text = when (text) { "" -> "S"; "S" -> "X"; else -> "" }
+                        text = when (text) {
+                            "" -> "S"; "S" -> "X"; else -> ""
+                        }
                         setBackgroundColor(if (text == "") Color.WHITE else Color.LTGRAY)
                     }
                 }
@@ -200,6 +203,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     /* ---------- helpers ---------- */
     private suspend fun ping() = try{ ApiClient.api.ping(); true }catch(_:Exception){ false }
+
+    private fun prepareBoard(grid: GridLayout, prefix: String) {
+        grid.post {
+            val side = grid.width                       // full available width
+            grid.layoutParams.height = side             // 1:1 aspect
+            grid.requestLayout()                        // re-measure
+            fillGrid(grid, prefix, side / 10f)          // now build buttons
+        }
+    }
+
+    private fun Int.dp(): Int =
+        (this * resources.displayMetrics.density).toInt()
 
     private fun getInputs():Pair<String,String>?{
         val k=etGameKey.text.toString().trim()
